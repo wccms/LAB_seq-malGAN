@@ -1410,7 +1410,6 @@ class SeqInserter(SeqGenerator):
                                     [self.batch_size, 2 * self.max_length, self.num_tokens + 1])
 
         # D
-
         def _get_D_graph(D_inputs, D_inputs_length, D_batch_size, reuse):
             with tf.variable_scope('D', reuse=reuse):
                 # set the depth of D cell
@@ -1501,13 +1500,14 @@ class SeqInserter(SeqGenerator):
                   the length of each row of X. shape: [num examples]
         """
         self.sess.run(self.init_op)
-        self.saver.restore(self.sess, '../seq_models/20170222_rnn_biLSTM_LSTM_G_128_birnn_D_128_attention_128_ff_128_max_len_1024_lr_0.001_temp_60_regu_0.0001/model-1')
-        return
+        #self.saver.restore(self.sess, '../seq_models/20170222_rnn_biLSTM_LSTM_G_128_birnn_D_128_attention_128_ff_128_max_len_1024_lr_0.001_temp_60_regu_0.0001/model-1')
+        #return
         # get the benign data
         X_benign = X[1]
         X = X[0]
         benign_sequence_length = sequence_length[1]
         sequence_length = sequence_length[0]
+        # shuffle and split train and val data for benigh
         index = np.arange(len(X_benign))
         np.random.shuffle(index)
         X_benign = X_benign[index]
@@ -1517,8 +1517,7 @@ class SeqInserter(SeqGenerator):
         benign_sequence_length_val = benign_sequence_length[num_training_samples:]
         X_benign = X_benign[:num_training_samples]
         benign_sequence_length = benign_sequence_length[:num_training_samples]
-
-        # shuffle and split train and val data
+        # shuffle and split train and val data for malware
         index = np.arange(len(X))
         np.random.shuffle(index)
         X = X[index]
@@ -1529,9 +1528,7 @@ class SeqInserter(SeqGenerator):
         X = X[:num_training_samples]
         sequence_length = sequence_length[:num_training_samples]
         
-        
-
-
+        # start train
         best_val_tpr = 1.0
         best_val_epoch = 0
         for epoch in range(self.max_epoch):
