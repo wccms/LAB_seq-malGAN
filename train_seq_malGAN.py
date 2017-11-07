@@ -13,3 +13,17 @@ import sys
 import shutil
 import numpy as np
 from utils import load_dataset
+
+def train_seq_malGAN():
+    '''
+    train seq_malGAN
+    :return: None
+    '''
+
+
+
+
+
+if __name__ == '__main__':
+    #tune_discriminator_parameters()
+    train_seq_malGAN()
