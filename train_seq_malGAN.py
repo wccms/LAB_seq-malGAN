@@ -6,6 +6,7 @@
 # File    : train_seq_malGAN.py
 
 import os
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 from datetime import datetime
@@ -14,16 +15,18 @@ import shutil
 import numpy as np
 from utils import load_dataset
 
+
 def train_seq_malGAN():
-    '''
+    """
     train seq_malGAN
     :return: None
-    '''
+    """
 
-
-
+    # define hyper parameters of networks
+    cellType = 'LSTM'
+    G_para
 
 
 if __name__ == '__main__':
-    #tune_discriminator_parameters()
+    # tune_discriminator_parameters()
     train_seq_malGAN()
