@@ -67,4 +67,52 @@ class RNN_Classifier(seqDiscriminator):
         :param learning_rate: learning rate for RNN
         :param model_path: the path to save current RNN model
         """
-        cell_type = 1
+        # set hyper parameters
+        self.cell_type = cell_type
+        self.rnn_layers = rnn_layers
+        self.ff_layers = ff_layers
+        self.attention_layers = attention_layers
+        self.is_bidirectional = is_bidirectional
+        self.num_tokens = num_tokens
+        self.max_len = max_len
+        self.num_class = num_class
+        self.batch_size = batch_size
+        self.max_epochs = max_epochs
+        self.max_epochs_val = max_epochs_val
+        self.learning_rate = learning_rate
+        self.model_path = model_path
+
+        #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
