@@ -8,7 +8,12 @@
 import numpy as np
 from sklearn import metrics
 import torch
+from torch.autograd import Variable
+import torch.nn as nn
+import torch.nn.functional as F
 
+
+class seqDiscriminator(nn.module)
 
 class seqDiscriminator(object):
     """
@@ -83,6 +88,7 @@ class RNN_Classifier(seqDiscriminator):
         self.model_path = model_path
 
         #
+
 
 
 
