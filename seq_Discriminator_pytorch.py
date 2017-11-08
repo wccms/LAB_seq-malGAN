@@ -13,8 +13,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class seqDiscriminator(nn.module)
-
 class seqDiscriminator(object):
     """
     Basic class for sequence Discriminator
