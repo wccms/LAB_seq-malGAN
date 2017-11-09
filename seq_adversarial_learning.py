@@ -369,10 +369,10 @@ def learning_SeqInserter():
 
     log_message = str(datetime.now()) + '\tTraining discriminative model on original dataset\n'
     D.train(np.hstack((X, np.zeros_like(X))), sequence_length, y)
-    #log_message += str(datetime.now()) + '\tTraining set result\t'
-    #log_message += score_template % D.evaluate(np.hstack((X, np.zeros_like(X))), sequence_length, y)
-    #log_message += '\n' + str(datetime.now()) + '\tTest set result\t'
-    #log_message += score_template % D.evaluate(np.hstack((X_test, np.zeros_like(X_test))), test_sequence_length, y_test)
+    log_message += str(datetime.now()) + '\tTraining set result\t'
+    log_message += score_template % D.evaluate(np.hstack((X, np.zeros_like(X))), sequence_length, y)
+    log_message += '\n' + str(datetime.now()) + '\tTest set result\t'
+    log_message += score_template % D.evaluate(np.hstack((X_test, np.zeros_like(X_test))), test_sequence_length, y_test)
     with open(log_path, 'a') as f:
         f.write(log_message + '\n')
 

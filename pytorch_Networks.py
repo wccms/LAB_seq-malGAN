@@ -74,6 +74,7 @@ class seqDiscriminator(nn.module):
         h0, c0 = self.init_hidden(input.size()[0])
         output, _ = self.LSTM(ouput, h0, c0)    # size: seq_len * batch_size * (hidden_dim*direction)
         if self.attnNet.size() > 0:
+            # use attention weighted hidden state as feed forward network;s input
             attn_weight = output
             for i in range(self.attnNet.size()):
                 attn_weight = self.attnNet(output)  # size: seq_len * batch_size * 1
@@ -83,7 +84,9 @@ class seqDiscriminator(nn.module):
             output = output * attn_weight.unsqueeze(-1)    # size: seq_len * batch_size * (hidden_dim*direction)
             output = torch.sum(output, 0)   # size: batch_size * (hidden_dim*direction)
         else:
-            pass
+            # using last hidden state as feed forward network;s input
+            output = output[-1,:,:]     # size: batch_size * (hidden_dim*direction)
+
 
 
 
