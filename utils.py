@@ -7,15 +7,15 @@
 
 import numpy as np
 
-def load_dataset(data_path, max_length=2048, pad_length=2048):
+def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
     """ utils: load the dataset
     :param data_path: the path of the dataset
-    :param max_length: the max length of a sequence
-    :param pad_length: the padded length of the returned matrix
+    :param max_seq_len: the max length of a sequence
+    :param pad_len: the padded length of the returned matrix
     :return: X_malware, malware_length, X_benign, benign_length
              X_malware and X_benign are the matrix of malware and benign.
-                shape: [num instances, max_length + pad_length]
-             malware_length and benign_length are the length of the matrix, which should be smaller than max_length
+                shape: [num instances, max_seq_len + pad_len]
+             malware_length and benign_length are the length of the matrix, which should be smaller than max_seq_len
                 shape: [num instances]
     """
     X_malware = []
@@ -30,11 +30,11 @@ def load_dataset(data_path, max_length=2048, pad_length=2048):
                 continue
             for digit in element.split(','):
                 Xi.append(int(digit))
-        Xi = Xi[:max_length]
+        Xi = Xi[:max_seq_len]
         if elements[1] is '0':
             benign_length.append(len(Xi))
-            X_benign.append(np.array(Xi + [0] * (max_length + pad_length - len(Xi)), dtype=np.int32))
+            X_benign.append(np.array(Xi + [0] * (max_seq_len + pad_len - len(Xi)), dtype=np.int32))
         else:
             malware_length.append(len(Xi))
-            X_malware.append(np.array(Xi + [0] * (max_length + pad_length - len(Xi)), dtype=np.int32))
+            X_malware.append(np.array(Xi + [0] * (max_seq_len + pad_len - len(Xi)), dtype=np.int32))
     return np.vstack(X_malware), np.array(malware_length), np.vstack(X_benign), np.array(benign_length)
