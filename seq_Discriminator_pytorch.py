@@ -10,7 +10,7 @@ from sklearn import metrics
 import torch
 
 
-class seqDiscriminator(object):
+class seqDiscriminator(nn.module):
     """
     Basic class for sequence Discriminator
     """
