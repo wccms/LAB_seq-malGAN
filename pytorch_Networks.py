@@ -6,9 +6,10 @@
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 
 class seqDiscriminator(nn.module):
@@ -16,8 +17,8 @@ class seqDiscriminator(nn.module):
     seqDiscriminator: network to classify a sequence constructed from torch.nn.module
     """
 
-    def __init__(self, vocab_num=160, embedding_dim=160, hidden_dim=128, is_bidirectional=False,
-                 max_seq_len=1024, attention_layers=None, ff_layers=[512], class_num=2):
+    def __init__(self, vocab_num=161, embedding_dim=161, hidden_dim=128, is_bidirectional=False,
+                 max_seq_len=1024, attention_layers=None, ff_layers=[256], class_num=2):
         """
 
         :param vocab_num: distinct feature numbers
@@ -56,6 +57,7 @@ class seqDiscriminator(nn.module):
             self.ffNet.append(nn.Linear(last_dim, ff_layers[i]))
             last_dim = ff_layers[i]
         self.ffNet.append(nn.Linear(last_dim, class_num))
+        self.softmax = nn.Softmax()
 
     def init_hidden(self, batch_size):
         if self.is_bidirectional:
@@ -66,13 +68,15 @@ class seqDiscriminator(nn.module):
             c = Variable(torch.randn(1, batch_size, self.hidden_dim))
         return h, c
 
-    def forward(self, input, input_len, hidden0, cell0):
+    def forward(self, input, seqLen, hidden0, cell0):
         # calculate forward output
         # input: batch_size * seq_len
         ouput = self.embedding(input)   # size: batch_size * seq_len * embedding_dim
         ouput = ouput.permute(1, 0, 2)  # size: seq_len * batch_size * embedding_dim
         h0, c0 = self.init_hidden(input.size()[0])
         output, _ = self.LSTM(ouput, h0, c0)    # size: seq_len * batch_size * (hidden_dim*direction)
+
+        # if use attention, input to ffNet is the weighted sum of output above
         if self.attnNet.size() > 0:
             # use attention weighted hidden state as feed forward network;s input
             attn_weight = output
@@ -83,9 +87,21 @@ class seqDiscriminator(nn.module):
             attn_weight = attn_weight / attn_weight_sum # size: seq_len * batch_size
             output = output * attn_weight.unsqueeze(-1)    # size: seq_len * batch_size * (hidden_dim*direction)
             output = torch.sum(output, 0)   # size: batch_size * (hidden_dim*direction)
+        # if don not use attention, input to ffNet is the last hidden state of output above
         else:
-            # using last hidden state as feed forward network;s input
             output = output[-1,:,:]     # size: batch_size * (hidden_dim*direction)
+
+        # calculate feed forward network's output
+        for i in range(self.ffNet.size()):
+            output = self.ffNet[i](output)
+        output = self.softmax(output)
+
+        return output
+
+
+
+
+
 
 
 
