@@ -98,6 +98,13 @@ class seqDiscriminator(nn.module):
 
         return output
 
+    def _predict_proba(self, X, seqLen):
+        """
+        predict probability that X belongs to malware(ie. class [1])
+        :param X: data to be predicted
+        :param seqLen: sequence length
+        :return: np.array( size=[len(X)]) of probability
+        """
 
 
 

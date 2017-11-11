@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-def train_D(D, X, seqLen, Y, batch_size=128, max_epochs=1000, max_epochs_val=5, learning_rate=0.001):
+def train_D(D, X, seqLen, Y, batch_size=128, max_epochs=1000, max_epochs_val=5, learning_rate=0.001, log_path):
     """
     train discriminator D given X, seqLen and Y
     :param D: Discriminator model
@@ -35,9 +35,28 @@ def train_D(D, X, seqLen, Y, batch_size=128, max_epochs=1000, max_epochs_val=5, 
     :param learning_rate: learning rate
     :return: ???
     """
+
+    # split X, seqLen and Y into training_set adn validation set
+    train_set_ratio = 0.75
+    shuffled_index = np.random.shuffle(np.arange(len(X)))
+    X = X[shuffled_index]
+    seqLen = seqLen[shuffled_index]
+    Y = Y[shuffled_index]
+    train_set_len = len(X) * train_set_ratio
+    X_val = X[train_set_len:]
+    seqLen_val = seqLen[train_set_len:]
+    Y_val = Y[train_set_len:]
+    X = X[:train_set_len]
+    seqLen = seqLen[:train_set_len]
+    Y = Y[:train_set_len]
+
+    # start traing epochs
     lossF = nn.CrossEntropyLoss()
     optimizer = optim.Adam(lr=learning_rate)
+    best_val_loss = 1000.0
+    best_val_epoch = 0
     for epoch_i in range(max_epochs):
+        train_loss = 0.0
         for start, end in zip(range(0, len(X), batch_size), range(batch_size, len(X) + 1, batch_size)):
             batch_X = Variable(torch.from_numpy(X[start:end]))
             batch_seqLen = Variable(torch.from_numpy(seqLen[start:end]))
@@ -46,8 +65,35 @@ def train_D(D, X, seqLen, Y, batch_size=128, max_epochs=1000, max_epochs_val=5, 
             h0, c0 = D.init_hidden()
             batch_out = D(batch_X, batch_seqLen, h0, c0)
             loss = lossF(batch_out, batch_Y)
+            train_loss += loss
             loss.back_ward()
             optimizer.step()
+        train_loss /= len(X)
+        val_loss = 0.0
+        for start, end in zip(range(0, len(X_val), batch_size), range(batch_size, len(X_val) + 1, batch_size)):
+            batch_X = Variable(torch.from_numpy(X_val[start:end]))
+            batch_seqLen = Variable(torch.from_numpy(seqLen_val[start:end]))
+            batch_Y = Variable(torch.from_numpy(Y_val[start:end]))
+            D.zero_grad()
+            h0, c0 = D.init_hidden()
+            batch_out = D(batch_X, batch_seqLen, h0, c0)
+            loss = lossF(batch_out, batch_Y)
+            val_loss += loss
+            loss.back_ward()
+            optimizer.step()
+        val_loss /= len(X_val)
+
+        # judge current validation loss, if no better than best val loss for max_epoch_val, break
+        # replace best_val_loss if current val_loss is less than best_val_loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_epoch = epoch_i
+        log_message = 'traing Discriminator: %d epoch, train_loss = %g, val_loss = %g' \
+                      % (epoch_i, train_loss, val_loss)
+        log_writer(log_path, log_message)
+
+        if epoch_i - best_val_epoch >= max_epochs_val:
+            break
 
 
 def train_seq_malGAN():
