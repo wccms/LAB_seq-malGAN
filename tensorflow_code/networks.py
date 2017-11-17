@@ -31,3 +31,4 @@ class blackboxDiscriminator():
         with tf.variable_scope(scope):
             self.input = tf.placeholder()
 
+
