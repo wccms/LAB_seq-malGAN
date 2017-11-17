@@ -6,6 +6,7 @@
 # File    : utils.py
 
 import numpy as np
+from datetime import datetime
 
 def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
     """ utils: load the dataset
@@ -38,3 +39,37 @@ def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
             malware_length.append(len(Xi))
             X_malware.append(np.array(Xi + [0] * (max_seq_len + pad_len - len(Xi)), dtype=np.int32))
     return np.vstack(X_malware), np.array(malware_length), np.vstack(X_benign), np.array(benign_length)
+
+def log_writer(log_filepath='log.txt', log_message=str(datetime.now())):
+    """
+    write log message to log file at log_filepath
+    :param log_filepath: filepath to write log to
+    :param log_message: log messages to write
+    :return: None
+    """
+    with open(log_filepath, 'a') as f:
+        f.write(log_message + '\n')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
