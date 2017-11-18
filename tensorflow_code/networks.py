@@ -5,8 +5,11 @@
 # Email   : pkushibo@pku.edu.cn
 # File    : networks.py
 
+from datetime import datetime
 import numpy as np
 import tensorflow as tf
+
+from utils import write_log
 
 
 class blackboxDiscriminator():
@@ -16,7 +19,7 @@ class blackboxDiscriminator():
 
     def __init__(self, cell_type='LSTM', rnn_layers=[128], is_bidirectionaal=False,
                  attention_layers=[128], ff_layers=[128], batch_size=128, num_token=161,
-                 max_seq_len=2048, num_class=2, learning_rate=0.001, scope='blackboxD'):
+                 max_seq_len=2048, num_class=2, learning_rate=0.001, scope='black_box_D'):
         """
         initialize black box discriminator
         :param cell_type:
@@ -34,12 +37,22 @@ class blackboxDiscriminator():
             self.input_len = tf.placeholder(tf.int32, [batch_size])
             self.target = tf.placeholder(tf.int32, [batch_size])
 
+            # decide cell type
+            if cell_type == 'LSTM':
+                cell = tf.contrib.rnn.BasicLSTMCell
+            elif cell_type == 'RNN':
+                cell = tf.contrib.rnn.BasicRNNCell
+            elif cell_type == 'GRU':
+                cell = tf.contrib.rnn.GRUCell
+            else:
+                raise ValueError('cell_type must be in ["LSTM", "RNN", "GRU"]')
+
             # build network structure: rnn part
             self.input_onehot = tf.one_hot(self.input, num_token)  # batch_size * max_seq_len * num_token
             if len(rnn_layers) == 1:
-                rnn_cell = tf.contrib.rnn.BasicLSTMCell(rnn_layers[0])
+                rnn_cell = cell(rnn_layers[0])
             else:
-                rnn_cell = [tf.contrib.rnn.BasicLSTMCell(layer) for layer in rnn_layers]
+                rnn_cell = [cell(layer) for layer in rnn_layers]
                 rnn_cell = tf.contrib.rnn.MultiRNNCell(rnn_cell)
             if is_bidirectionaal:
                 (output_fw, output_bw), _ = tf.nn.bidirectional_dynamic_rnn(rnn_cell, rnn_cell, self.input_onehot,
@@ -80,7 +93,28 @@ class blackboxDiscriminator():
             # calculate loss and define optimizer
             self.loss = tf.reduce_sum(
                 tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.target, logits=self.output))
-            train_opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
-            grads_and_vars = train_opt.compute_gradients(self.loss)
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            grads_and_vars = optimizer.compute_gradients(self.loss)
             grads_and_vars = [(tf.clip_by_value(grad, -0.1, 0.1), var) for (grad, var) in grads_and_vars]
-            train_opt.apply_gradients(grads_and_vars)
+            self.train_opt = optimizer.apply_gradients(grads_and_vars)
+
+    def train(self, X, seq_len, Y, batch_size=128, max_epochs=1000):
+        """
+        train model
+        :param X:
+        :param seq_len:
+        :param Y:
+        :param batch_size:
+        :param max_epochs:
+        :return:
+        """
+        # shuffle data
+        indexes = np.random.shuffle(np.arange(len(X)))
+        X = X[indexes], seq_len = seq_len[indexes], Y = Y[indexes]
+        num_train = len(X) * 0.8
+        X_val = X_val[num_train:], seq_len_val = seq_len[num_train:], Y_val = Y[num_train:]
+        X = X[:num_train], seq_len = seq_len[:num_train], Y = Y[:num_train]
+
+        # training for max_epochs
+        for epoch_i in range(max_epochs):
+            pass

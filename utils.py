@@ -8,6 +8,7 @@
 import numpy as np
 from datetime import datetime
 
+
 def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
     """ utils: load the dataset
     :param data_path: the path of the dataset
@@ -40,7 +41,8 @@ def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
             X_malware.append(np.array(Xi + [0] * (max_seq_len + pad_len - len(Xi)), dtype=np.int32))
     return np.vstack(X_malware), np.array(malware_length), np.vstack(X_benign), np.array(benign_length)
 
-def log_writer(log_filepath='log.txt', log_message=str(datetime.now())):
+
+def write_log(log_filepath='log.txt', log_message=str(datetime.now())):
     """
     write log message to log file at log_filepath
     :param log_filepath: filepath to write log to
@@ -51,25 +53,48 @@ def log_writer(log_filepath='log.txt', log_message=str(datetime.now())):
         f.write(log_message + '\n')
 
 
+class dataLoader():
+    """
+    data loader
+    """
 
+    def __init__(self, X, seq_len, Y, shuffle=True):
+        """
+        initialize dataLoader
+        :param X:
+        :param seq_len:
+        :param Y:
+        """
+        if shuffle:
+            indexes = np.arange(len(X))
+            np.random.shuffle(indexes)
+            X = X[indexes]
+            seq_len = seq_len[indexes]
+            Y = Y[indexes]
+        self.X = X
+        self.seq_len = seq_len
+        self.Y = Y
 
+        self.index = 0
+        self.data_num = len(X)
 
+    def next_batch(self, batch_size=128):
+        """
+        return next batch of data
+        :param batch_size:
+        :return: next batch of data
+        """
+        if self.index + batch_size > self.data_num:
+            X = self.X[self.index:]
+            seq_len = self.seq_len[self.index:]
+            Y = self.Y[self.index:]
+            left_num = self.index + batch_size - self.data_num
+            self.index = 0
+            left_X, left_seq_len, left_Y = self.next_batch(left_num)
+            return np.vstack((X, left_X)), np.vstack((seq_len, left_seq_len)), np.vstack((Y, left_Y))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        else:
+            self.index += batch_size
+            return self.X[self.index - batch_size:self.index], \
+                   self.seq_len[self.index - batch_size:self.index], \
+                   self.Y[self.index - batch_size:self.index],
