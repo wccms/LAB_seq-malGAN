@@ -19,9 +19,10 @@ class blackboxDiscriminator():
 
     def __init__(self, cell_type='LSTM', rnn_layers=[128], is_bidirectionaal=False,
                  attention_layers=[128], ff_layers=[128], batch_size=128, num_token=161,
-                 max_seq_len=2048, num_class=2, learning_rate=0.001, scope='black_box_D'):
+                 max_seq_len=2048, num_class=2, learning_rate=0.001, scope='black_box_D',
+                 model_path='./black_box_d_model'):
         """
-        initialize black box discriminator
+
         :param cell_type:
         :param rnn_layers:
         :param is_bidirectionaal:
@@ -31,7 +32,17 @@ class blackboxDiscriminator():
         :param num_token:
         :param max_seq_len:
         :param num_class:
+        :param learning_rate:
+        :param scope:
+        :param model_path:
         """
+        self.batch_size = batch_size
+        self.num_token=num_token
+        self.max_seq_len=max_seq_len
+        self.learning_rate=learning_rate
+        self.num_class=num_class
+        self.model_path = model_path
+        # define network structure
         with tf.variable_scope(scope):
             self.input = tf.placeholder(tf.int32, [batch_size, max_seq_len])
             self.input_len = tf.placeholder(tf.int32, [batch_size])
@@ -97,8 +108,9 @@ class blackboxDiscriminator():
             grads_and_vars = optimizer.compute_gradients(self.loss)
             grads_and_vars = [(tf.clip_by_value(grad, -0.1, 0.1), var) for (grad, var) in grads_and_vars]
             self.train_opt = optimizer.apply_gradients(grads_and_vars)
+            self.init_opt = tf.global_variables_initializer()
 
-    def train(self, X, seq_len, Y, batch_size=128, max_epochs=1000):
+    def train(self, X, seq_len, Y, batch_size=128, max_epochs=100, max_epochs_val=5):
         """
         train model
         :param X:
@@ -108,13 +120,63 @@ class blackboxDiscriminator():
         :param max_epochs:
         :return:
         """
+
+        # get session and saver
+        self.sess = tf.get_default_session()
+        self.saver = tf.train.Saver()
+
         # shuffle data
-        indexes = np.random.shuffle(np.arange(len(X)))
+        indexes = np.arange(len(X))
+        np.random.shuffle(indexes)
         X = X[indexes], seq_len = seq_len[indexes], Y = Y[indexes]
         num_train = len(X) * 0.8
         X_val = X_val[num_train:], seq_len_val = seq_len[num_train:], Y_val = Y[num_train:]
         X = X[:num_train], seq_len = seq_len[:num_train], Y = Y[:num_train]
 
         # training for max_epochs
+        best_val_loss = 9999.0
+        best_val_epoch = 0
+        self.sess.run(self.init_opt)
         for epoch_i in range(max_epochs):
-            pass
+            train_loss = 0.0
+            for start, end in zip(range(0, len(X), batch_size), range(batch_size, len(X) + 1, batch_size)):
+                X_batch = X[start:end], seq_len_batch = seq_len[start:end], Y_batch = Y[start:end]
+                _, loss = self.sess.run([self.train_opt, self.loss],
+                                        feed_dict={self.input: X_batch, self.input_len: seq_len_batch,
+                                                   self.target: Y_batch})
+                train_loss += loss
+            val_loss = 0.0
+            for start, end in zip(0, len(X_val), batch_size), range(batch_size, len(X_val) + 1, batch_size):
+                X_val_batch = X_val[start:end]
+                seq_len_val_batch = seq_len_val[start:end]
+                Y_val_batch = Y_val[start:end]
+                _, loss = self.sess.run(self.loss,
+                                        feed_dict={self.input: X_val_batch, self.input_len: seq_len_val_batch,
+                                                   self.target: Y_val_batch})
+                val_loss += loss
+            print('training black box D: epoch=%d\ttrain_loss=%g\tval_loss=%g' % (epoch_i, train_loss, val_loss))
+            self.saver.save(self.sess, self.model_path, epoch_i)
+            if val_loss < best_val_epoch:
+                best_val_epoch = epoch_i
+                best_val_loss = val_loss
+            if epoch_i - best_val_loss > max_epochs_val:
+                self.saver.restore(self.sess, self.model_path + '-' + str(best_val_epoch))
+
+    def predict_proba(self, X, seq_len):
+        """
+        predict probablity for given X and seq_len
+        :param X:
+        :param seq_len:
+        :return:
+        """
+        proba = np.zeros((len(X),self.num_class))
+        last_end=0
+        for start, end in zip(range(0, len(X), self.batch_size), range(self.batch_size, len(X) + 1, self.batch_size)):
+            X_batch = X[start:end], seq_len_batch = seq_len[start:end]
+            proba_batch = self.sess.run(self.output,feed_dict={self.input:X_batch,self.input_len:seq_len_batch})
+            proba[start:end]=proba_batch
+            last_end=end
+        X_batch = X[last_end:], seq_len_batch = seq_len[last_end]
+        proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
+        proba[last_end:] = proba_batch
+        return proba
