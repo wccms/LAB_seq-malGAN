@@ -25,8 +25,8 @@ def train_seq_malGAN():
     main training function: first train subD, then alternately train boxD and malG
     :return: None
     """
-    max_seq_len = 1024
 
+    max_seq_len = 1024
     # make workspace directory for current mission and copy code
     timeTag = datetime.now().strftime('%Y-%m-%d_%H:%M')
     dir_path = '../tensorflow_result/'
@@ -58,40 +58,39 @@ def train_seq_malGAN():
     # define substituteD as subD, black box D as boxD and malware Genarator as G
     boxD = blackboxDiscriminator(cell_type='LSTM', rnn_layers=[128], is_bidirectionaal=False,
                                  attention_layers=[128], ff_layers=[128], batch_size=128, num_token=161,
-                                 max_seq_len=2048, num_class=2, learning_rate=0.001, scope='blackboxD',
-                                 model_path=dir_path + '/black_box_D_model')
+                                 max_seq_len=max_seq_len * 2, num_class=2, learning_rate=0.001,
+                                 scope='black_box_D', model_path=dir_path + '/black_box_D_model')
     # boxD_params = {'vocab_num': 160, 'embedding_dim': 160, 'hidden_dim': 128, 'is_bidirectional': False,
     #                'max_seq_len': 1024, 'attention_layers': None, 'ff_layers': [512], 'class_num': 2}
     # G_params = {}
     print(str(datetime.now()) + '\tFinish defining subD, boxD and G.')
 
     # train substitute Discrimanator first
-    log_message = str(datetime.now()) + 'Start training black box Discriminator.'
-    data_loader = dataLoader(X, seqLen, Y)
+    print(str(datetime.now()) + 'Start training black box Discriminator.')
     boxD.train(X, seqLen, Y, batch_size=128, max_epochs=100, max_epochs_val=5)
     print(str(datetime.now()) + 'Finish training subD.')
     print(str(datetime.now()) + 'Training set result:')
-    print(score_template % evaluate(boxD,np.hstack((X, np.zeros_like(X))), seqLen, Y))
+    print(score_template % evaluate(boxD, np.hstack((X, np.zeros_like(X))), seqLen, Y))
     print(str(datetime.now()) + 'Test set result:')
-    print(score_template % evaluate(boxD,np.hstack((X_test, np.zeros_like(X_test))), seqLen_test, Y_test))
+    print(score_template % evaluate(boxD, np.hstack((X_test, np.zeros_like(X_test))), seqLen_test, Y_test))
 
-    # train substitute Discriminator and Generator of malGAN
-    for epoch_i in range(5):
-        pass
-        # train G
-        # todo
-
-        # train D
-        # todo
-
-        # sample from G and evaluate on current black box D
-        # todo
-
-        # retrain black box D and evaluate generated data from G
-        # todo
-
-        # write to log
-        # todo
+    # # train substitute Discriminator and Generator of malGAN
+    # for epoch_i in range(5):
+    #     pass
+    #     # train G
+    #     # todo
+    #
+    #     # train D
+    #     # todo
+    #
+    #     # sample from G and evaluate on current black box D
+    #     # todo
+    #
+    #     # retrain black box D and evaluate generated data from G
+    #     # todo
+    #
+    #     # write to log
+    #     # todo
 
 
 if __name__ == '__main__':

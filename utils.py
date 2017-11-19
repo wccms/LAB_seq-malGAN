@@ -41,6 +41,7 @@ def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
             X_malware.append(np.array(Xi + [0] * (max_seq_len + pad_len - len(Xi)), dtype=np.int32))
     return np.vstack(X_malware), np.array(malware_length), np.vstack(X_benign), np.array(benign_length)
 
+
 def evaluate(model, X, seq_len, trueY):
     """
     evaluate a model
@@ -49,20 +50,17 @@ def evaluate(model, X, seq_len, trueY):
     :param seq_len:
     :return:
     """
-    pred_proba = model.predict_proba(X,seq_len)[:,1]
+    pred_proba = model.predict_proba(X, seq_len)[:, 1]
     from sklearn import metrics
     score_dict = {}
-    score_dict['AUC']=metrics.roc_auc_score(trueY, pred_proba)
-    predY = [0 if proba <0.5 else 1 for proba in pred_proba]
-    score_dict['Accuracy']=metrics.accuracy_score(trueY,predY)
-    confusionMatrix = metrics.confusion_matrix(trueY,predY)
+    score_dict['AUC'] = metrics.roc_auc_score(trueY, pred_proba)
+    predY = [0 if proba < 0.5 else 1 for proba in pred_proba]
+    score_dict['Accuracy'] = metrics.accuracy_score(trueY, predY)
+    confusionMatrix = metrics.confusion_matrix(trueY, predY)
     score_dict['ConfusionMatrix'] = confusionMatrix
     score_dict['TPR'] = confusionMatrix[1, 1] / float(confusionMatrix[1, 0] + confusionMatrix[1, 1])
     score_dict['FPR'] = confusionMatrix[0, 0] / float(confusionMatrix[0, 0] + confusionMatrix[0, 1])
     return score_dict
-
-
-
 
 
 def write_log(log_filepath='log.txt', log_message=str(datetime.now())):
@@ -74,8 +72,6 @@ def write_log(log_filepath='log.txt', log_message=str(datetime.now())):
     """
     with open(log_filepath, 'a') as f:
         f.write(log_message + '\n')
-
-
 
 
 class dataLoader():
