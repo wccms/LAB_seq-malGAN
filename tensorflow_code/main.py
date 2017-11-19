@@ -42,6 +42,16 @@ def train_seq_malGAN():
     score_template = 'TPR %(TPR)f\tFPR %(FPR)f\tAccuracy %(Accuracy)f\tAUC %(AUC)f'
     print(str(datetime.now()) + '\tStart training seq_malGAN.')
 
+    # define substituteD as subD, black box D as boxD and malware Genarator as G
+    boxD = blackboxDiscriminator(cell_type='LSTM', rnn_layers=[128], is_bidirectional=False,
+                                 attention_layers=None, ff_layers=[128], batch_size=128, num_token=161,
+                                 max_seq_len=max_seq_len * 2, num_class=2, learning_rate=0.001,
+                                 scope='black_box_D', model_path=dir_path + '/black_box_D_model')
+    # boxD_params = {'vocab_num': 160, 'embedding_dim': 160, 'hidden_dim': 128, 'is_bidirectional': False,
+    #                'max_seq_len': 1024, 'attention_layers': None, 'ff_layers': [512], 'class_num': 2}
+    # G_params = {}
+    print(str(datetime.now()) + '\tFinish defining subD, boxD and G.')
+
     # load data
     X_malware, seqLen_malware, X_benigh, seqLen_benigh = \
         load_dataset('../data/API_rand_trainval_len_2048.txt', max_seq_len, 0)
@@ -54,16 +64,6 @@ def train_seq_malGAN():
     seqLen_test = np.hstack((seqLen_malware_test, seqLen_benigh_test))
     Y_test = np.array([1] * len(X_malware_test) + [0] * len(X_benigh_test))
     print(str(datetime.now()) + '\tFinish loading data.')
-
-    # define substituteD as subD, black box D as boxD and malware Genarator as G
-    boxD = blackboxDiscriminator(cell_type='LSTM', rnn_layers=[128], is_bidirectionaal=False,
-                                 attention_layers=None, ff_layers=[128], batch_size=128, num_token=161,
-                                 max_seq_len=max_seq_len * 2, num_class=2, learning_rate=0.001,
-                                 scope='black_box_D', model_path=dir_path + '/black_box_D_model')
-    # boxD_params = {'vocab_num': 160, 'embedding_dim': 160, 'hidden_dim': 128, 'is_bidirectional': False,
-    #                'max_seq_len': 1024, 'attention_layers': None, 'ff_layers': [512], 'class_num': 2}
-    # G_params = {}
-    print(str(datetime.now()) + '\tFinish defining subD, boxD and G.')
 
     # train substitute Discrimanator first
     print(str(datetime.now()) + '\tStart training black box Discriminator.')

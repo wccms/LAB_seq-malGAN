@@ -17,7 +17,7 @@ class blackboxDiscriminator():
     black box Discrimanator
     """
 
-    def __init__(self, cell_type='LSTM', rnn_layers=[128], is_bidirectionaal=False,
+    def __init__(self, cell_type='LSTM', rnn_layers=[128], is_bidirectional=False,
                  attention_layers=[128], ff_layers=[128], batch_size=128, num_token=161,
                  max_seq_len=2048, num_class=2, learning_rate=0.001, scope='black_box_D',
                  model_path='./black_box_d_model'):
@@ -37,10 +37,10 @@ class blackboxDiscriminator():
         :param model_path:
         """
         self.batch_size = batch_size
-        self.num_token=num_token
-        self.max_seq_len=max_seq_len
-        self.learning_rate=learning_rate
-        self.num_class=num_class
+        self.num_token = num_token
+        self.max_seq_len = max_seq_len
+        self.learning_rate = learning_rate
+        self.num_class = num_class
         self.model_path = model_path
         # define network structure
         with tf.variable_scope(scope):
@@ -65,16 +65,17 @@ class blackboxDiscriminator():
             else:
                 rnn_cell = [cell(layer) for layer in rnn_layers]
                 rnn_cell = tf.contrib.rnn.MultiRNNCell(rnn_cell)
-            if is_bidirectionaal:
+            if is_bidirectional:
                 (output_fw, output_bw), _ = tf.nn.bidirectional_dynamic_rnn(rnn_cell, rnn_cell, self.input_onehot,
                                                                             self.input_len, dtype=tf.float32)
                 if attention_layers is None:
                     output_fw = tf.reverse_sequence(output_fw, self.input_len, 1, 0)
                     output = tf.concat([output_fw[:, 0, :], output_bw[:, 0, :]], 1)  # batch_size * hidden_dim
                 else:
+
                     output = tf.concat([output_fw, output_bw], 2)  # batch_size * max_seq_len * hidden_dim
             else:
-                output = tf.nn.dynamic_rnn(rnn_cell, self.input_onehot, self.input_len, dtype=tf.float32)
+                output, _ = tf.nn.dynamic_rnn(rnn_cell, self.input_onehot, self.input_len, dtype=tf.float32)
                 if attention_layers is None:
                     output = output[:, 0, :]  # batch_size * hidden_dim
             # build network structure: attention part
@@ -94,8 +95,8 @@ class blackboxDiscriminator():
             # build network structure: feed forward part
             # output size = batch_size * hidden_dim
             ff_layers += [num_class]
-            for i, layer in ff_layers:
-                if i < len(attention_layers) - 1:
+            for i, layer in enumerate(ff_layers):
+                if i < len(ff_layers) - 1:
                     output = tf.contrib.layers.fully_connected(output, layer, activation_fn=tf.nn.tanh)
                 else:
                     output = tf.contrib.layers.fully_connected(output, layer, activation_fn=None)
@@ -128,10 +129,16 @@ class blackboxDiscriminator():
         # shuffle data
         indexes = np.arange(len(X))
         np.random.shuffle(indexes)
-        X = X[indexes], seq_len = seq_len[indexes], Y = Y[indexes]
+        X = X[indexes]
+        seq_len = seq_len[indexes]
+        Y = Y[indexes]
         num_train = len(X) * 0.8
-        X_val = X_val[num_train:], seq_len_val = seq_len[num_train:], Y_val = Y[num_train:]
-        X = X[:num_train], seq_len = seq_len[:num_train], Y = Y[:num_train]
+        X_val = X[num_train:]
+        seq_len_val = seq_len[num_train:]
+        Y_val = Y[num_train:]
+        X = X[:num_train]
+        seq_len = seq_len[:num_train]
+        Y = Y[:num_train]
 
         # training for max_epochs
         best_val_loss = 9999.0
@@ -169,13 +176,13 @@ class blackboxDiscriminator():
         :param seq_len:
         :return:
         """
-        proba = np.zeros((len(X),self.num_class))
-        last_end=0
+        proba = np.zeros((len(X), self.num_class))
+        last_end = 0
         for start, end in zip(range(0, len(X), self.batch_size), range(self.batch_size, len(X) + 1, self.batch_size)):
             X_batch = X[start:end], seq_len_batch = seq_len[start:end]
-            proba_batch = self.sess.run(self.output,feed_dict={self.input:X_batch,self.input_len:seq_len_batch})
-            proba[start:end]=proba_batch
-            last_end=end
+            proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
+            proba[start:end] = proba_batch
+            last_end = end
         X_batch = X[last_end:], seq_len_batch = seq_len[last_end]
         proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
         proba[last_end:] = proba_batch
