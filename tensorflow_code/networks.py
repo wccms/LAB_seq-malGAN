@@ -44,9 +44,9 @@ class blackboxDiscriminator():
         self.model_path = model_path
         # define network structure
         with tf.variable_scope(scope):
-            self.input = tf.placeholder(tf.int32, [batch_size, max_seq_len])
-            self.input_len = tf.placeholder(tf.int32, [batch_size])
-            self.target = tf.placeholder(tf.int32, [batch_size])
+            self.input = tf.placeholder(tf.int32, [None, max_seq_len])
+            self.input_len = tf.placeholder(tf.int32, [None])
+            self.target = tf.placeholder(tf.int32, [None])
 
             # decide cell type
             if cell_type == 'LSTM':
@@ -80,7 +80,7 @@ class blackboxDiscriminator():
                     output = output[:, 0, :]  # batch_size * hidden_dim
             # build network structure: attention part
             if attention_layers is not None:
-                attention_layers = attention_layers + [1]
+                attention_layers += [1]
                 for i, layer in enumerate(attention_layers):
                     if i < len(attention_layers) - 1:
                         attention_weight = tf.contrib.layers.fully_connected(output, layer, activation_fn=tf.nn.tanh)
@@ -110,6 +110,8 @@ class blackboxDiscriminator():
             grads_and_vars = [(tf.clip_by_value(grad, -0.1, 0.1), var) for (grad, var) in grads_and_vars]
             self.train_opt = optimizer.apply_gradients(grads_and_vars)
             self.init_opt = tf.global_variables_initializer()
+            self.sess = tf.Session()
+            self.saver = tf.train.Saver()
 
     def train(self, X, seq_len, Y, batch_size=128, max_epochs=100, max_epochs_val=5):
         """
@@ -122,9 +124,12 @@ class blackboxDiscriminator():
         :return:
         """
 
-        # get session and saver
-        self.sess = tf.get_default_session()
-        self.saver = tf.train.Saver()
+        self.saver.restore(self.sess, self.model_path + '-' + str(8))
+        return
+
+        X = X[:1000]
+        seq_len = seq_len[:1000]
+        Y = Y[:1000]
 
         # shuffle data
         indexes = np.arange(len(X))
@@ -132,7 +137,7 @@ class blackboxDiscriminator():
         X = X[indexes]
         seq_len = seq_len[indexes]
         Y = Y[indexes]
-        num_train = len(X) * 0.8
+        num_train = int(len(X) * 0.8)
         X_val = X[num_train:]
         seq_len_val = seq_len[num_train:]
         Y_val = Y[num_train:]
@@ -146,21 +151,43 @@ class blackboxDiscriminator():
         self.sess.run(self.init_opt)
         for epoch_i in range(max_epochs):
             train_loss = 0.0
+            last_end = 0
             for start, end in zip(range(0, len(X), batch_size), range(batch_size, len(X) + 1, batch_size)):
-                X_batch = X[start:end], seq_len_batch = seq_len[start:end], Y_batch = Y[start:end]
+                X_batch = X[start:end]
+                seq_len_batch = seq_len[start:end]
+                Y_batch = Y[start:end]
                 _, loss = self.sess.run([self.train_opt, self.loss],
                                         feed_dict={self.input: X_batch, self.input_len: seq_len_batch,
                                                    self.target: Y_batch})
                 train_loss += loss
+                print(
+                    'training black box D - training part: epoch=%d\tindex_start=%d\tindex_end=%d\ttrain_loss_cumsum=%g' % (
+                        epoch_i, start, end, train_loss))
+                last_end = end
+            _, loss = self.sess.run([self.train_opt, self.loss],
+                                    feed_dict={self.input: X[last_end:], self.input_len: seq_len[last_end:],
+                                               self.target: Y[last_end:]})
+            train_loss += loss
+            train_loss /= len(X)
             val_loss = 0.0
-            for start, end in zip(0, len(X_val), batch_size), range(batch_size, len(X_val) + 1, batch_size):
+            last_end = 0
+            for start, end in zip(range(0, len(X_val), batch_size), range(batch_size, len(X_val) + 1, batch_size)):
                 X_val_batch = X_val[start:end]
                 seq_len_val_batch = seq_len_val[start:end]
                 Y_val_batch = Y_val[start:end]
-                _, loss = self.sess.run(self.loss,
-                                        feed_dict={self.input: X_val_batch, self.input_len: seq_len_val_batch,
-                                                   self.target: Y_val_batch})
+                loss = self.sess.run(self.loss,
+                                     feed_dict={self.input: X_val_batch, self.input_len: seq_len_val_batch,
+                                                self.target: Y_val_batch})
                 val_loss += loss
+                print(
+                    'training black box D - validation part: epoch=%d\tindex_start=%d\tindex_end=%d\tval_loss_cumsum=%g' % (
+                    epoch_i, start, end, val_loss))
+                last_end = end
+            loss = self.sess.run(self.loss,
+                                 feed_dict={self.input: X_val[last_end:], self.input_len: seq_len_val[last_end:],
+                                            self.target: Y_val[last_end:]})
+            val_loss += loss
+            val_loss /= len(X_val)
             print('training black box D: epoch=%d\ttrain_loss=%g\tval_loss=%g' % (epoch_i, train_loss, val_loss))
             self.saver.save(self.sess, self.model_path, epoch_i)
             if val_loss < best_val_epoch:
@@ -176,14 +203,16 @@ class blackboxDiscriminator():
         :param seq_len:
         :return:
         """
-        proba = np.zeros((len(X), self.num_class))
+        pred_proba = np.zeros((len(X), self.num_class))
         last_end = 0
         for start, end in zip(range(0, len(X), self.batch_size), range(self.batch_size, len(X) + 1, self.batch_size)):
-            X_batch = X[start:end], seq_len_batch = seq_len[start:end]
+            print(
+                'black box D predicting: index_start=%d\tindex_end=%d' % (start, end))
+            X_batch = X[start:end]
+            seq_len_batch = seq_len[start:end]
             proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
-            proba[start:end] = proba_batch
+            pred_proba[start:end] = proba_batch
             last_end = end
-        X_batch = X[last_end:], seq_len_batch = seq_len[last_end]
-        proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
-        proba[last_end:] = proba_batch
-        return proba
+        pred_proba[last_end:] = self.sess.run(self.output,
+                                              feed_dict={self.input: X[last_end:], self.input_len: seq_len[last_end:]})
+        return pred_proba

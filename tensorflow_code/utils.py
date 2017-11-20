@@ -7,7 +7,7 @@
 
 import numpy as np
 from datetime import datetime
-
+from sklearn import metrics
 
 def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
     """ utils: load the dataset
@@ -50,8 +50,12 @@ def evaluate(model, X, seq_len, trueY):
     :param seq_len:
     :return:
     """
+    indexes=range(len(X))
+    np.random.shuffle(indexes)
+    X=X[indexes][:1000]
+    seq_len=seq_len[indexes][:1000]
+    trueY=trueY[indexes][:1000]
     pred_proba = model.predict_proba(X, seq_len)[:, 1]
-    from sklearn import metrics
     score_dict = {}
     score_dict['AUC'] = metrics.roc_auc_score(trueY, pred_proba)
     predY = [0 if proba < 0.5 else 1 for proba in pred_proba]

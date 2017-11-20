@@ -15,8 +15,6 @@ import shutil
 from networks import blackboxDiscriminator
 
 from utils import load_dataset
-from utils import write_log
-from utils import dataLoader
 from utils import evaluate
 
 
@@ -28,7 +26,8 @@ def train_seq_malGAN():
 
     max_seq_len = 1024
     # make workspace directory for current mission and copy code
-    timeTag = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    #timeTag = datetime.now().strftime('%Y-%m-%d')
+    timeTag = '2017-11-19'
     dir_path = '../tensorflow_result/'
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -64,10 +63,14 @@ def train_seq_malGAN():
     seqLen_test = np.hstack((seqLen_malware_test, seqLen_benigh_test))
     Y_test = np.array([1] * len(X_malware_test) + [0] * len(X_benigh_test))
     print(str(datetime.now()) + '\tFinish loading data.')
+    print(str(datetime.now()) + '\tlen(X)=%d\tlen(X_malware)=%d\tlen(X_benigh)=%d\t'%
+          (len(X),len(X_malware),len(X_benigh)))
+    print(str(datetime.now()) + '\tlen(X_test)=%d\tlen(X_malware_test)=%d\tlen(X_benigh_test)=%d'%
+          (len(X_test),len(X_malware_test),len(X_benigh_test)))
 
     # train substitute Discrimanator first
     print(str(datetime.now()) + '\tStart training black box Discriminator.')
-    boxD.train(X, seqLen, Y, batch_size=128, max_epochs=100, max_epochs_val=5)
+    boxD.train(np.hstack((X, np.zeros_like(X))), seqLen, Y, batch_size=128, max_epochs=100, max_epochs_val=5)
     print(str(datetime.now()) + '\tFinish training subD.')
     print(str(datetime.now()) + '\tTraining set result:')
     print(score_template % evaluate(boxD, np.hstack((X, np.zeros_like(X))), seqLen, Y))
