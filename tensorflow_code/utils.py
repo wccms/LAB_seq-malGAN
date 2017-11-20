@@ -50,11 +50,15 @@ def evaluate(model, X, seq_len, trueY):
     :param seq_len:
     :return:
     """
-    indexes=range(len(X))
-    np.random.shuffle(indexes)
-    X=X[indexes][:1000]
-    seq_len=seq_len[indexes][:1000]
-    trueY=trueY[indexes][:1000]
+    # print('in evaluate: len(X)=%d\tlen(seq_len)=%d\tlen(trueY)=%d'%(len(X),len(seq_len),len(trueY)))
+    # indexes=np.arange(len(X))
+    # np.random.shuffle(indexes)
+    # X=X[indexes]
+    # X=X[:1000]
+    # seq_len=seq_len[indexes]
+    # seq_len=seq_len[:1000]
+    # trueY=trueY[indexes]
+    # trueY=trueY[:1000]
     pred_proba = model.predict_proba(X, seq_len)[:, 1]
     score_dict = {}
     score_dict['AUC'] = metrics.roc_auc_score(trueY, pred_proba)

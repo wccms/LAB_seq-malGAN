@@ -26,8 +26,8 @@ def train_seq_malGAN():
 
     max_seq_len = 1024
     # make workspace directory for current mission and copy code
-    #timeTag = datetime.now().strftime('%Y-%m-%d')
-    timeTag = '2017-11-19'
+    timeTag = datetime.now().strftime('%Y-%m-%d')
+    #timeTag = '2017-11-19'
     dir_path = '../tensorflow_result/'
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -59,7 +59,7 @@ def train_seq_malGAN():
     Y = np.array([1] * len(X_malware) + [0] * len(X_benigh))
     X_malware_test, seqLen_malware_test, X_benigh_test, seqLen_benigh_test = \
         load_dataset('../data/API_rand_test_len_2048.txt', max_seq_len, 0)
-    X_test = np.vstack((X_malware_test, X_malware_test))
+    X_test = np.vstack((X_malware_test, X_benigh_test))
     seqLen_test = np.hstack((seqLen_malware_test, seqLen_benigh_test))
     Y_test = np.array([1] * len(X_malware_test) + [0] * len(X_benigh_test))
     print(str(datetime.now()) + '\tFinish loading data.')

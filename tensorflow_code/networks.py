@@ -124,13 +124,6 @@ class blackboxDiscriminator():
         :return:
         """
 
-        self.saver.restore(self.sess, self.model_path + '-' + str(8))
-        return
-
-        X = X[:1000]
-        seq_len = seq_len[:1000]
-        Y = Y[:1000]
-
         # shuffle data
         indexes = np.arange(len(X))
         np.random.shuffle(indexes)
