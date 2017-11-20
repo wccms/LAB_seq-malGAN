@@ -153,9 +153,8 @@ class blackboxDiscriminator():
                                         feed_dict={self.input: X_batch, self.input_len: seq_len_batch,
                                                    self.target: Y_batch})
                 train_loss += loss
-                print(
-                    'training black box D - training part: epoch=%d\tindex_start=%d\tindex_end=%d\ttrain_loss_cumsum=%g' % (
-                        epoch_i, start, end, train_loss))
+                # print('training black box D - training part: epoch=%d\tindex_start=%d\tindex_end=%d\ttrain_loss_cumsum=%g'
+                #       % (epoch_i, start, end, train_loss))
                 last_end = end
             _, loss = self.sess.run([self.train_opt, self.loss],
                                     feed_dict={self.input: X[last_end:], self.input_len: seq_len[last_end:],
@@ -172,9 +171,8 @@ class blackboxDiscriminator():
                                      feed_dict={self.input: X_val_batch, self.input_len: seq_len_val_batch,
                                                 self.target: Y_val_batch})
                 val_loss += loss
-                print(
-                    'training black box D - validation part: epoch=%d\tindex_start=%d\tindex_end=%d\tval_loss_cumsum=%g' % (
-                    epoch_i, start, end, val_loss))
+                # print('training black box D - validation part: epoch=%d\tindex_start=%d\tindex_end=%d\tval_loss_cumsum=%g'
+                #       % (epoch_i, start, end, val_loss))
                 last_end = end
             loss = self.sess.run(self.loss,
                                  feed_dict={self.input: X_val[last_end:], self.input_len: seq_len_val[last_end:],
@@ -199,8 +197,7 @@ class blackboxDiscriminator():
         pred_proba = np.zeros((len(X), self.num_class))
         last_end = 0
         for start, end in zip(range(0, len(X), self.batch_size), range(self.batch_size, len(X) + 1, self.batch_size)):
-            print(
-                'black box D predicting: index_start=%d\tindex_end=%d' % (start, end))
+            print('black box D predicting: index_start=%d\tindex_end=%d' % (start, end))
             X_batch = X[start:end]
             seq_len_batch = seq_len[start:end]
             proba_batch = self.sess.run(self.output, feed_dict={self.input: X_batch, self.input_len: seq_len_batch})
