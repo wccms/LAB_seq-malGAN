@@ -70,7 +70,7 @@ def train_seq_malGAN():
 
     # train substitute Discrimanator first
     print(str(datetime.now()) + '\tStart training black box Discriminator.')
-    boxD.train(np.hstack((X, np.zeros_like(X))), seqLen, Y, batch_size=128, max_epochs=100, max_epochs_val=5)
+    boxD.train(np.hstack((X, np.zeros_like(X))), seqLen, Y, batch_size=128, max_epochs=50, max_epochs_val=5)
     print(str(datetime.now()) + '\tFinish training subD.')
     print(str(datetime.now()) + '\tTraining set result:')
     print(score_template % evaluate(boxD, np.hstack((X, np.zeros_like(X))), seqLen, Y))
