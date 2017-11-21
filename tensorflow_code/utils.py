@@ -7,6 +7,7 @@
 
 import numpy as np
 from datetime import datetime
+from sklearn import metrics
 
 
 def load_dataset(data_path, max_seq_len=2048, pad_len=2048):
@@ -50,8 +51,17 @@ def evaluate(model, X, seq_len, trueY):
     :param seq_len:
     :return:
     """
+    print('in evaluate: len(X)=%d\tlen(seq_len)=%d\tlen(trueY)=%d'%(len(X),len(seq_len),len(trueY)))
+    indexes=np.arange(len(X))
+    np.random.shuffle(indexes)
+    X=X[indexes]
+    seq_len=seq_len[indexes]
+    trueY=trueY[indexes]
+    seq_len = seq_len[:1000]
+    X = X[:1000]
+    trueY=trueY[:1000]
+
     pred_proba = model.predict_proba(X, seq_len)[:, 1]
-    from sklearn import metrics
     score_dict = {}
     score_dict['AUC'] = metrics.roc_auc_score(trueY, pred_proba)
     predY = [0 if proba < 0.5 else 1 for proba in pred_proba]
@@ -63,16 +73,30 @@ def evaluate(model, X, seq_len, trueY):
     return score_dict
 
 
-def write_log(log_filepath='log.txt', log_message=str(datetime.now())):
+class logWriter():
     """
-    write log message to log file at log_filepath
-    :param log_filepath: filepath to write log to
-    :param log_message: log messages to write
-    :return: None
+    log writer class to write log
     """
-    with open(log_filepath, 'a') as f:
-        f.write(log_message + '\n')
 
+    def __init__(self, log_filepath='log.txt'):
+        self.log_filepath=log_filepath
+        self.log_file=open(log_filepath,'w')
+
+    def write(self, log_message):
+        self.log_file.write(log_message + '\n')
+
+    def __del__(self):
+        self.log_file.close()
+
+def writeLog(log_file, log_message):
+    """
+    function to write log_message to log_file
+    :param log_file:
+    :param log_message:
+    :return:
+    """
+    with open(log_file,'a') as f:
+        f.write(log_message+'\n')
 
 class dataLoader():
     """
