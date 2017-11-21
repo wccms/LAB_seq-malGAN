@@ -78,21 +78,23 @@ class blackboxDiscriminator():
 
                         output = tf.concat([output_fw, output_bw], 2)  # batch_size * max_seq_len * hidden_dim
                 else:
+                    # size = batch_size * max_seq_len * hidden_dim
                     output, _ = tf.nn.dynamic_rnn(rnn_cell, self.input_onehot, self.input_len, dtype=tf.float32)
                     if attention_layers is None:
                         output = output[:, 0, :]  # batch_size * hidden_dim
                 # build network structure: attention part
                 if attention_layers is not None:
                     attention_layers += [1]
+                    attention_weight = output
                     for i, layer in enumerate(attention_layers):
                         if i < len(attention_layers) - 1:
-                            attention_weight = tf.contrib.layers.fully_connected(output, layer,
+                            attention_weight = tf.contrib.layers.fully_connected(attention_weight, layer,
                                                                                  activation_fn=tf.nn.tanh)
                         else:
-                            attention_weight = tf.contrib.layers.fully_connected(output, layer, activation_fn=None)
-                    attention_weight = tf.exp(tf.squeeze(attention_weight))
-                    input_mask = tf.sequence_mask(self.input_len, max_seq_len)
-                    attention_weight = attention_weight * input_mask
+                            attention_weight = tf.contrib.layers.fully_connected(attention_weight, layer, activation_fn=None)
+                    attention_weight = tf.exp(tf.squeeze(attention_weight,squeeze_dims=2))
+                    input_mask = tf.sequence_mask(self.input_len, max_seq_len, dtype=tf.float32)
+                    attention_weight *= input_mask
                     attention_weight_sum = tf.reduce_sum(attention_weight, 1, keep_dims=True)
                     attention_weight /= attention_weight_sum
                     output = tf.reduce_sum(output * tf.expand_dims(attention_weight, 2), axis=1)
@@ -130,8 +132,8 @@ class blackboxDiscriminator():
         :return:
         """
 
-        self.saver.restore(self.sess, self.model_path + '-' + str(15))
-        return
+        # self.saver.restore(self.sess, self.model_path + '-' + str(16))
+        # return
 
         # shuffle data
         indexes = np.arange(len(X))
@@ -159,7 +161,8 @@ class blackboxDiscriminator():
         for epoch_i in range(max_epochs):
             train_loss = 0.0
             last_end = 0
-            for start, end in zip(range(0, len(X), self.batch_size), range(self.batch_size, len(X) + 1, self.batch_size)):
+            for start, end in zip(range(0, len(X), self.batch_size),
+                                  range(self.batch_size, len(X) + 1, self.batch_size)):
                 X_batch = X[start:end]
                 seq_len_batch = seq_len[start:end]
                 Y_batch = Y[start:end]
@@ -178,7 +181,8 @@ class blackboxDiscriminator():
             train_loss /= len(X)
             val_loss = 0.0
             last_end = 0
-            for start, end in zip(range(0, len(X_val), self.batch_size), range(self.batch_size, len(X_val) + 1, self.batch_size)):
+            for start, end in zip(range(0, len(X_val), self.batch_size),
+                                  range(self.batch_size, len(X_val) + 1, self.batch_size)):
                 X_val_batch = X_val[start:end]
                 seq_len_val_batch = seq_len_val[start:end]
                 Y_val_batch = Y_val[start:end]
@@ -224,9 +228,9 @@ class blackboxDiscriminator():
                                               feed_dict={self.input: X[last_end:], self.input_len: seq_len[last_end:]})
         return pred_proba
 
-    # def __del__(self):
-    #     """
-    #     delete class object
-    #     :return:
-    #     """
-    #     self.sess.close()
+        # def __del__(self):
+        #     """
+        #     delete class object
+        #     :return:
+        #     """
+        #     self.sess.close()

@@ -43,7 +43,7 @@ def train_seq_malGAN():
     print((str(datetime.now()) + '\tStart training seq_malGAN.'))
 
     # define substituteD as subD, black box D as boxD and malware Genarator as G
-    boxD = blackboxDiscriminator(cell_type='LSTM', rnn_layers=[128], is_bidirectional=False,
+    boxD = blackboxDiscriminator(cell_type='LSTM', rnn_layers=[128], is_bidirectional=True,
                                  attention_layers=[128], ff_layers=[128], batch_size=64, num_token=161,
                                  max_seq_len=max_seq_len * 2, num_class=2, learning_rate=0.001,
                                  scope='black_box_D', model_path=dir_path + '/black_box_D_model')
