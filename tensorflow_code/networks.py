@@ -122,7 +122,7 @@ class blackboxDiscriminator():
         """
 
         # get session and saver
-        self.sess = tf.get_default_session()
+        self.sess = tf.Session()
         self.saver = tf.train.Saver()
 
         # shuffle data

@@ -13,6 +13,7 @@ from datetime import datetime
 import sys
 import shutil
 from tensorflow_code.networks import blackboxDiscriminator
+import tensorflow as tf
 
 from utils import load_dataset
 from utils import write_log
